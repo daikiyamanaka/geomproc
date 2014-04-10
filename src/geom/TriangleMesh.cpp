@@ -421,6 +421,10 @@ void TriangleMesh::initialize(){
                                 points[facets[i][2]]);
     }
 
+    // sharp feature marker
+    sharp_feature_marker.resize(points.size());
+    std::fill(sharp_feature_marker.begin(), sharp_feature_marker.end(), false);
+
     // face normals
     f_normals.resize(num_of_faces);
     for(int i=0; i<num_of_faces; i++){        
@@ -444,6 +448,12 @@ void TriangleMesh::initialize(){
     delete[] ring;
     delete[] ringN;
 
+}
+
+void TriangleMesh::setSharpFeature(std::vector<int> feature_ids){
+    for(int i=0; i<(int)feature_ids.size(); i++){
+        sharp_feature_marker[i] = true;
+    }
 }
 
 Eigen::Vector3d TriangleMesh::centroid(Eigen::Vector3d &a, Eigen::Vector3d &b, Eigen::Vector3d &c){

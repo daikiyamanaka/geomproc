@@ -44,6 +44,10 @@ public:
     void getEdges(std::vector<std::pair<int, int> > &edges);
     float getAverageLength();
     std::vector<int> getNeighbors(int index);
+
+    void setSharpFeature(std::vector<int> feature_ids);
+    void setSharpFeature(std::vector<Eigen::Vector3d> features);
+
     int get_number_of_faces();
     int get_number_of_vertices();
     void getBBox(Eigen::Vector3d &min, Eigen::Vector3d &max);
@@ -63,6 +67,7 @@ public:
     std::vector<std::vector<int> > v_neighbors; // 1-ring neighbor vertices
     std::vector<float> point_scalars;
     std::vector<bool> boundary_marker;
+    std::vector<bool> sharp_feature_marker;
     // edge
     std::vector<std::pair<int, int> > edges;
 
