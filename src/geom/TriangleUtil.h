@@ -12,6 +12,8 @@ namespace triangle_util{
 //template <class T> void reDelaunay(T &mesh, std::string switches);
 //void reDelaunay(Shape2D &mesh, std::vector<Eigen::Vector2i> &boundary_edges, std::string switches = std::string("pnze"));
 
+void triangulate(const std::vector<Eigen::Vector3d> &points, TriangleMesh &mesh, std::string switches = std::string("nze"));
+
 void boundary2mesh(PolyLine &boundary, TriangleMesh &mesh, std::string switches);
 
 void boundary2mesh(PolyLine &boundary, 

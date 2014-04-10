@@ -1,4 +1,4 @@
-#include "triangleUtil.h"
+#include "TriangleUtil.h"
 
 namespace triangle_util{
 
@@ -101,6 +101,68 @@ void reDelaunay(Shape2D &mesh, std::vector<Eigen::Vector2i> &boundary_edges, std
     delete(tri.pointmarkerlist);    
 }
 */
+
+void triangulate(const std::vector<Eigen::Vector3d> &points, 
+                 TriangleMesh &mesh, 
+                 std::string switches)
+{
+    triangulateio tri, out, *vorout;
+    vorout = NULL;
+    out.pointlist = NULL;
+    out.pointmarkerlist = NULL;    
+    out.trianglelist = NULL;
+    out.triangleattributelist = NULL;
+    out.trianglearealist = NULL;    
+    out.pointattributelist = NULL;
+    out.neighborlist = NULL;
+    out.segmentlist = NULL;
+    out.segmentmarkerlist = NULL;
+    out.edgelist = NULL;
+    out.edgemarkerlist = NULL;
+
+    tri.numberofpoints = points.size();
+    tri.numberofpointattributes = 0;
+    tri.pointlist = new REAL[tri.numberofpoints*2];
+    tri.pointattributelist = NULL;
+    tri.pointmarkerlist = NULL;
+    tri.segmentmarkerlist = NULL;
+    tri.numberofholes = 0;
+    tri.numberofregions = 0;
+    tri.holelist = NULL;
+    tri.regionlist = NULL;
+
+    // insert input mesh points
+    for(int i=0; i<tri.numberofpoints; i++)
+    {
+        tri.pointlist[i*2] = points[i][0];
+        tri.pointlist[i*2+1] = points[i][1];
+    }
+
+    triangulate((char*)switches.c_str(), &tri, &out, vorout);    
+
+    std::vector<Eigen::Vector3d> tri_points;
+    std::vector<std::vector<int> > faces;
+
+    tri_points.resize(out.numberofpoints);
+    faces.resize(out.numberoftriangles);    
+
+    for(int i=0; i<out.numberofpoints; i++){
+      tri_points[i] = Eigen::Vector3d(out.pointlist[i*2], out.pointlist[i*2+1], 0);            
+    }
+
+    for(int i=0; i<out.numberoftriangles; i++){
+      std::vector<int> face(3);
+      face[0] = out.trianglelist[i*3];
+      face[1] = out.trianglelist[i*3+1];
+      face[2] = out.trianglelist[i*3+2];
+      faces[i] = face;
+    }
+
+    mesh.createFromFaceVertex(tri_points, faces);
+
+    delete(tri.pointlist);
+}
+
 void boundary2mesh(PolyLine &boundary, 
                    std::vector<Eigen::Vector3d> &constrained_points, 
                    TriangleMesh &mesh,
