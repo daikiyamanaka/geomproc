@@ -82,9 +82,9 @@ add_subdirectory("src/geom")
 add_subdirectory("src/io")
 
 ##########################
-# math
+# render
 ##########################
-#add_subdirectory("src/math")
+add_subdirectory("src/render")
 
 ##########################
 # sampling
