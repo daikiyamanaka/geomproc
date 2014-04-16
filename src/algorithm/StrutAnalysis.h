@@ -23,7 +23,7 @@ typedef enum CROSS_SECTION_TYPE{
 /**
  * @brief gravitational acceleration
  */
-	const double g;
+	const double g_;
 
 public:
 	StrutAnalysis();

@@ -5,7 +5,7 @@
 namespace FEM
 {
 
-StrutAnalysis::StrutAnalysis():g(9.8){
+StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1*10e10), rho_(10e3){
 	cross_section_type_ = SQUARE;
 	/*
 	// tree //
@@ -14,8 +14,8 @@ StrutAnalysis::StrutAnalysis():g(9.8){
 	*/
 
 	// rubber //
-	young_modulus_ = 0.1*10e10; 
-	rho_ = 10e3;
+	//young_modulus_ = 0.1*10e10; 
+	//rho_ = 10e3;
 
 	gravity_direction_ = Eigen::Vector3d(0, 0, -1);
 }
@@ -137,8 +137,8 @@ void StrutAnalysis::constructSelfWeightForce(const std::vector<Eigen::Vector3d> 
 
 		// add force by self weight //
 		for(int j=0; j<3; j++){
-			F(p_index*3+j) += mass*g*gravity_direction_[j];
-			F(q_index*3+j) += mass*g*gravity_direction_[j];			
+			F(p_index*3+j) += mass*g_*gravity_direction_[j];
+			F(q_index*3+j) += mass*g_*gravity_direction_[j];			
 		}
 	}
 
@@ -390,8 +390,8 @@ void StrutAnalysis::constructBoundedProblem(const std::vector<Eigen::Vector3d> &
 
 		// add force by self weight //
 		for(int j=0; j<3; j++){
-			F(p_index*3+j) += mass*g*gravity_direction_[j];
-			F(q_index*3+j) += mass*g*gravity_direction_[j];			
+			F(p_index*3+j) += mass*g_*gravity_direction_[j];
+			F(q_index*3+j) += mass*g_*gravity_direction_[j];			
 		}
 	}
 
