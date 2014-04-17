@@ -70,39 +70,45 @@ public:
 	 * @brief construct self weight force vector
 	 */
 	void constructSelfWeightForce(const std::vector<Eigen::Vector3d> &nodes,
-		                            const std::vector<std::pair<int, int> > &edges,
-		                            const std::vector<double> &radiuses,
-		                            const std::vector<Eigen::Vector3d> &external_force,		                            
-		                            Eigen::VectorXd &F);
+		                          const std::vector<std::pair<int, int> > &edges,
+		                          const std::vector<double> &radiuses,
+		                          const std::vector<Eigen::Vector3d> &external_force,		                            
+		                          Eigen::VectorXd &F);
  
 	/**
 	 * @brief apply Dirichlet boundary condition
 	 * not remove rows
 	 */
 	 void applyDirichletBoundaryCondition(const Eigen::MatrixXd &A,
-	 	                                    const Eigen::VectorXd &b,	 	                                    
-	 	                                    const std::vector<std::pair<int, double> > &condition,
-	 	                                    Eigen::MatrixXd &boundedA,
-	 	                                    Eigen::VectorXd &boundedb);
+	 	                                  const Eigen::VectorXd &b,	 	                                    
+	 	                                  const std::vector<std::pair<int, double> > &condition,
+	 	                                  Eigen::MatrixXd &boundedA,
+	 	                                  Eigen::VectorXd &boundedb);
 
 	/**
 	 * @brief fix node positions
 	 * remove columns and rows according to fixed node
 	 */
-  void fixNodePositions(const Eigen::MatrixXd &A,
-                        const Eigen::VectorXd &b,	 	                                    
-                        const std::vector<std::pair<int, double> > &condition,
-                        Eigen::MatrixXd &boundedA,
-                        Eigen::VectorXd &boundedb);
+    void fixNodePositions(const Eigen::MatrixXd &A,
+                          const Eigen::VectorXd &b,	 	                                    
+                          const std::vector<std::pair<int, double> > &condition,
+                          Eigen::MatrixXd &boundedA,
+                          Eigen::VectorXd &boundedb);
 
 	/**
 	 * @brif construct fixed node boundary condition
 	 */
-  void constructFixedBoundaryCondition(const std::vector<Eigen::Vector3d> &nodes,
-		                                   const std::vector<std::pair<int, int> > &edges,
-		                                   const std::vector<bool> &fixed_marker,
-		                                   Eigen::MatrixXd &A,
-		                                   Eigen::VectorXd &b);
+	void constructFixedBoundaryCondition(const std::vector<Eigen::Vector3d> &nodes,
+                                         const std::vector<std::pair<int, int> > &edges,
+	                                     const std::vector<bool> &fixed_marker,
+                                         Eigen::MatrixXd &A,
+	                                     Eigen::VectorXd &b);
+
+	void getInternalForce(const std::vector<Eigen::Vector3d> &nodes,
+	                      const std::vector<std::pair<int, int> > &edges,	
+                          const std::vector<double> &radiuses,                      
+                          std::vector<double> &internal_forces,
+                          std::vector<Eigen::Vector3d> &internal_forces_direction);
 
 	/**
 	 * @brief construct problem with fixed nodes

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "StrutAnalysis.h"
 
 namespace FEM
@@ -111,6 +112,42 @@ void convTri2Struts(const std::vector<Eigen::Vector3d> &tri_points,
 	}
 }
 
+void StrutAnalysis::getInternalForce(const std::vector<Eigen::Vector3d> &nodes,
+  				                     const std::vector<std::pair<int, int> > &edges,	
+                 				     const std::vector<double> &radiuses,                      
+                  					 std::vector<double> &internal_forces,
+			                         std::vector<Eigen::Vector3d> &internal_forces_direction)
+{
+	int num_of_nodes = nodes.size()*3;
+	internal_forces.resize(num_of_nodes);
+	internal_forces_direction.resize(num_of_nodes);
+	std::fill(internal_forces_direction.begin(), internal_forces_direction.end(), Eigen::Vector3d::Zero());
+
+	// loop for edges //
+	for(int i=0; i<(int)edges.size(); i++){
+
+		int p_index = edges[i].first;
+		int q_index = edges[i].second;
+		Eigen::Vector3d p = nodes[p_index];
+		Eigen::Vector3d q = nodes[q_index];
+
+		double area = circleArea(radiuses[i]);
+		double mass = (p-q).norm()*area*0.5*rho_;
+
+		// add force by self weight //
+		for(int j=0; j<3; j++){
+			internal_forces_direction[p_index][j] += mass*g_*gravity_direction_[j];
+			internal_forces_direction[q_index][j] += mass*g_*gravity_direction_[j];
+		}
+	}
+
+	for(int i=0; i<num_of_nodes; i++){
+		internal_forces[i] = internal_forces_direction[i].norm();		
+		internal_forces_direction[i].normalize();
+	}
+
+}
+
 StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1*10e10), rho_(10e3){
 	cross_section_type_ = SQUARE;
 	/*
@@ -191,16 +228,6 @@ void StrutAnalysis::constructStiffnessMatrix(const std::vector<Eigen::Vector3d> 
 		double beta = s_theta*s_phi;
 		double gamma = c_theta;
 
-		/*
-		std::cout << "s_theta: " << s_theta << std::endl;
-		std::cout << "c_theta: " << c_theta << std::endl;		
-		std::cout << "s_phi: " << s_phi << std::endl;
-		std::cout << "c_phi: " << c_phi << std::endl;		
-		std::cout << "alpha: " << alpha << std::endl;
-		std::cout << "beta: " << beta << std::endl;
-		std::cout << "gamma: " << gamma << std::endl;				
-		*/
-
 		std::vector<double> coefficients(6);
 		coefficients[0] = alpha*alpha;
 		coefficients[1] = alpha*beta;
@@ -212,23 +239,6 @@ void StrutAnalysis::constructStiffnessMatrix(const std::vector<Eigen::Vector3d> 
 		double area = circleArea(radiuses[i]);
 		double length = (q-p).norm();
 
-		// loop for coordinates //
-		/*		
-		for(int k=0; k<3; k++){
-			for(int l=k; l<3; l++){
-				std::cout << k*2+l << std::endl;
-				double coeff = young_modulus_*area*coefficients[k*2+l]/length;
-				stiff_mat(p_index*3+k, p_index*3+l) += coeff;
-				stiff_mat(p_index*3+l, p_index*3+k) += coeff;				
-				stiff_mat(p_index*3+k, q_index*3+l) += -coeff;
-				stiff_mat(q_index*3+l, p_index*3+k) += -coeff;
-				stiff_mat(q_index*3+k, p_index*3+l) += -coeff;
-				stiff_mat(p_index*3+l, q_index*3+k) += -coeff;
-				stiff_mat(q_index*3+k, q_index*3+l) += coeff;
-				stiff_mat(q_index*3+l, q_index*3+k) += coeff;
-			}
-		}		
-		*/
 		for(int k=0; k<6; k++){
 			double coeff = young_modulus_*area*coefficients[k]/length;
 			int row = indices[k][0];
@@ -278,7 +288,6 @@ void StrutAnalysis::constructSelfWeightForce(const std::vector<Eigen::Vector3d> 
 		F(i*3+1) += external_forces[i][1];
 		F(i*3+2) += external_forces[i][2];				
 	}
-
 }
 
  void StrutAnalysis::applyDirichletBoundaryCondition(const Eigen::MatrixXd &A,
@@ -412,127 +421,6 @@ void StrutAnalysis::constructFixedBoundaryCondition(const std::vector<Eigen::Vec
 	}
 }
 
-/*
-void StrutAnalysis::constructBoundedProblem(const std::vector<Eigen::Vector3d> &nodes,
-	                           const std::vector<std::pair<int, int> > &edges,
-	                           const std::vector<double> &radiuses, 
-	                           const std::vector<bool> &fixed_marker,
-	                           const std::vector<Eigen::Vector3d> &external_forces,
-                             Eigen::MatrixXd &K,
-	                           Eigen::VectorXd &F)
-{
-	assert(edges.size() == radiuses.size());
-
-	int num_of_fixed_nodes = std::count( fixed_marker.begin(), fixed_marker.end(), true);
-
-	int num_of_elements = 3*nodes.size();
-	int num_of_constraints = 3*num_of_fixed_nodes;
-	K = Eigen::MatrixXd::Zero(num_of_elements+num_of_constraints, num_of_elements);
-
-	int indices[6][2] = {{0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}, {2, 2}};
-
-  // construct stiffness matrix for each edge //
-	for(int i=0; i<(int)edges.size(); i++){
-
-		int p_index = edges[i].first;
-		int q_index = edges[i].second;		
-		Eigen::Vector3d p = nodes[p_index];
-		Eigen::Vector3d q = nodes[q_index];
-
-		double x = q[0]-p[0];
-		double y = q[1]-p[1];
-		double z = q[2]-p[2];
-
-		double c_theta = z/sqrt(x*x+y*y+z*z);
-		c_theta = std::isnan(c_theta) ? 0 : c_theta;
-		double s_theta = sqrt(x*x+y*y)/sqrt(x*x+y*y+z*z);
-		s_theta = std::isnan(s_theta) ? 0 : s_theta;
-		double s_phi = y/sqrt(x*x+y*y);
-		s_phi = std::isnan(s_phi) ? 0 : s_phi;
-		double c_phi = x/sqrt(x*x+y*y);		
-		c_phi = std::isnan(c_phi) ? 0 : c_phi;
-
-
-		double alpha = s_theta*c_phi;
-		double beta = s_theta*s_phi;
-		double gamma = c_theta;
-
-		std::cout << "s_theta: " << s_theta << std::endl;
-		std::cout << "c_theta: " << c_theta << std::endl;		
-		std::cout << "s_phi: " << s_phi << std::endl;
-		std::cout << "c_phi: " << c_phi << std::endl;		
-		std::cout << "alpha: " << alpha << std::endl;
-		std::cout << "beta: " << beta << std::endl;
-		std::cout << "gamma: " << gamma << std::endl;				
-
-		std::vector<double> coefficients(6);
-		coefficients[0] = alpha*alpha;
-		coefficients[1] = alpha*beta;
-		coefficients[2] = alpha*gamma;
-		coefficients[3] = beta*beta;
-		coefficients[4] = beta*gamma;
-		coefficients[5] = gamma*gamma;
-
-		double area = circleArea(radiuses[i]);
-		double length = (q-p).norm();
-
-		for(int k=0; k<6; k++){
-			double coeff = young_modulus_*area*coefficients[k]/length;
-			int row = indices[k][0];
-			int col = indices[k][1];
-			K(p_index*3+row, p_index*3+col) += coeff;
-			K(p_index*3+col, p_index*3+row) += coeff;				
-			K(p_index*3+row, q_index*3+col) += -coeff;
-			K(q_index*3+col, p_index*3+row) += -coeff;
-			K(q_index*3+row, p_index*3+col) += -coeff;
-			K(p_index*3+col, q_index*3+row) += -coeff;
-			K(q_index*3+row, q_index*3+col) += coeff;
-			K(q_index*3+col, q_index*3+row) += coeff;			
-		}
-	}
-
-	// construct constraint //
-	int index = 0;	
-	for(int i=0; i<fixed_marker.size(); i++){
-		if(!fixed_marker[i]){
-			continue;
-		}
-		K(num_of_elements+index*3  , i*3) = 10e20;
-		K(num_of_elements+index*3+1, i*3+1) = 10e20;
-		K(num_of_elements+index*3+2, i*3+2) = 10e20;
-		index ++;
-	}
-
-
-	// construct force vector //
-	F = Eigen::VectorXd::Zero(num_of_elements+num_of_constraints);
-
-	// loop for edges //
-	for(int i=0; i<(int)edges.size(); i++){
-
-		int p_index = edges[i].first;
-		int q_index = edges[i].second;
-		Eigen::Vector3d p = nodes[p_index];
-		Eigen::Vector3d q = nodes[q_index];
-
-		double area = circleArea(radiuses[i]);
-		double mass = (p-q).norm()*area*0.5*rho_;
-
-		// add force by self weight //
-		for(int j=0; j<3; j++){
-			F(p_index*3+j) += mass*g_*gravity_direction_[j];
-			F(q_index*3+j) += mass*g_*gravity_direction_[j];			
-		}
-	}
-
-	// add external force //
-	for(int i = 0; i<(int)external_forces.size(); i++){
-		F(i*3+0) += external_forces[i][0];
-		F(i*3+1) += external_forces[i][1];
-		F(i*3+2) += external_forces[i][2];				
-	}
-}
-*/
 double StrutAnalysis::circleArea(const double r){
 	return r*r*M_PI;
 }
