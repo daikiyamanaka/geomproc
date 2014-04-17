@@ -6,6 +6,25 @@
 
 namespace FEM
 {
+/**
+ * @brief convert tetrahedron to struts
+ */	
+void convTet2Struts(const std::vector<Eigen::Vector3d> &tet_points,
+                    const std::vector<std::vector<int> > &tets,
+                    const std::vector<std::vector<int> > &n_tets,                   
+                    std::vector<Eigen::Vector3d> &points,
+                    std::vector<std::pair<int, int> > &edges,
+                    std::vector<bool> &fixed_marker);
+
+/**
+ * @brief convert triangles to struts
+ */	
+void convTri2Struts(const std::vector<Eigen::Vector3d> &tri_points,
+                    const std::vector<std::vector<int> > &tris,
+                    const std::vector<std::vector<int> > &n_tets,                   
+                    std::vector<Eigen::Vector3d> &points,
+                    std::vector<std::pair<int, int> > &edges,
+                    std::vector<bool> &fixed_marker);
 
 /**
  * @brief StrutAnalysis
@@ -32,11 +51,11 @@ public:
 	//----------
 	// Modifier
 	//----------
-	void setYoungModulus();
-	void setCrossSection();
-	void setRadius();
-	void setDensity();
-	void setGravityDirection();
+	void setYoungModulus(double val);
+	//void setCrossSection();
+	//void setRadius(double radius);
+	void setDensity(double density);
+	void setGravityDirection(Eigen::Vector3d direction);
 
 	/**
 	 * @brief construct stiffness matrix

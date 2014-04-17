@@ -1,2 +1,2 @@
-aux_source_directory(. sampling_src)
-add_library(sampling ${sampling_src})
+aux_source_directory(. algorithm_src)
+add_library(algorithm ${algorithm_src})

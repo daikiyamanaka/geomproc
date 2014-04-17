@@ -1,9 +1,115 @@
 #include <iostream>
 #include "StrutAnalysis.h"
 
-
 namespace FEM
 {
+
+int tet_face[4][3] = {{1, 2, 3}, {0, 3, 2}, {0, 1, 3}, {0, 2, 1}};
+
+void convTet2Struts(const std::vector<Eigen::Vector3d> &tet_points,
+                    const std::vector<std::vector<int> > &tets,
+                    const std::vector<std::vector<int> > &n_tets,                   
+                    std::vector<Eigen::Vector3d> &points,
+                    std::vector<std::pair<int, int> > &edges,
+                    std::vector<bool> &fixed_marker)
+{
+  points.clear();
+  edges.clear();
+  fixed_marker.clear();
+
+  // loop for tetra //
+  for(int i=0; i<(int)tets.size(); i++){
+    int prev_index, next_index;
+    // loop for face // 
+    for(int j=0; j<4; j++){
+      for(int k=0; k<3; k++){
+        prev_index = tets[i][tet_face[j][k]];
+        next_index = tets[i][tet_face[j][(k+1)%3]];
+        bool visited_edge = false;
+        for(int l=0; l<edges.size(); l++){
+          if(edges[l].first == prev_index && edges[l].second == next_index){
+            visited_edge = true;
+            break;
+          }
+          if(edges[l].second == prev_index && edges[l].first == next_index){
+            visited_edge = true;
+            break;
+          }          
+        }
+        if(!visited_edge){
+          edges.push_back(std::pair<int, int>(prev_index, next_index));
+        }
+      }
+    }
+  }
+  points.resize(tet_points.size());
+  std::copy(tet_points.begin(), tet_points.end(), points.begin());
+
+  // fix boundary points //
+  fixed_marker.resize(points.size());
+  std::fill(fixed_marker.begin(), fixed_marker.end(), false);
+  for(int i=0; i<(int)tets.size(); i++){
+    for(int j=0; j<4; j++){
+      if(n_tets[i][j] < 0){ // boundary
+        fixed_marker[tets[i][(j+1)%4]] = true;
+        fixed_marker[tets[i][(j+2)%4]] = true;
+        fixed_marker[tets[i][(j+3)%4]] = true;                
+      }
+    }
+  }
+}
+
+void convTri2Struts(const std::vector<Eigen::Vector3d> &tri_points,
+                    const std::vector<std::vector<int> > &tris,
+                    const std::vector<std::vector<int> > &n_tris,                   
+                    std::vector<Eigen::Vector3d> &points,
+                    std::vector<std::pair<int, int> > &edges,
+                    std::vector<bool> &fixed_marker)
+{
+	points.clear();
+	edges.clear();
+	fixed_marker.clear();
+
+	// loop for tetra //
+	for(int i=0; i<(int)tris.size(); i++){
+    	int prev_index, next_index;
+		// loop for face // 
+		for(int j=0; j<3; j++){
+			prev_index = tris[i][j];
+	        next_index = tris[i][(j+1)%3];
+	        bool visited_edge = false;
+    		for(int l=0; l<edges.size(); l++){
+				if(edges[l].first == prev_index && edges[l].second == next_index){
+		            visited_edge = true;
+        			break;
+				}
+				if(edges[l].second == prev_index && edges[l].first == next_index){
+					visited_edge = true;
+					break;
+				}          
+			}
+			if(!visited_edge){
+				edges.push_back(std::pair<int, int>(prev_index, next_index));
+			}
+		}
+	}
+	points.resize(tri_points.size());
+	std::copy(tri_points.begin(), tri_points.end(), points.begin());
+
+	// fix boundary points //
+	std::cout << "creating boundary marker..." << std::endl;    
+	fixed_marker.resize(points.size());
+	std::fill(fixed_marker.begin(), fixed_marker.end(), false);
+	for(int i=0; i<(int)tris.size(); i++){
+		for(int j=0; j<3; j++){
+			if(n_tris[i][j] < 0){ // boundary
+				fixed_marker[tris[i][(j+1)%3]] = true;
+				fixed_marker[tris[i][(j+2)%3]] = true;
+				//fixed_marker[tris[i][2] = true;                
+			}
+		}
+	}
+}
 
 StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1*10e10), rho_(10e3){
 	cross_section_type_ = SQUARE;
@@ -24,9 +130,31 @@ StrutAnalysis::~StrutAnalysis(){
 
 }
 
+void StrutAnalysis::setYoungModulus(double val){
+	young_modulus_ = val;
+}
+/*
+void StrutAnalysis::setCrossSection(){
+
+}
+*/
+/*
+void StrutAnalysis::setRadius(double radius){
+
+}
+*/
+/*
+void StrutAnalysis::setDensity(){
+
+}
+*/
+void StrutAnalysis::setGravityDirection(Eigen::Vector3d direction){
+	gravity_direction_ = direction;
+}
+
 void StrutAnalysis::constructStiffnessMatrix(const std::vector<Eigen::Vector3d> &nodes, 
-	                                           const std::vector<std::pair<int, int> > &edges,	                                           
-	                                           const std::vector<double> &radiuses,
+	                                         const std::vector<std::pair<int, int> > &edges,	                                           
+	                                         const std::vector<double> &radiuses,
                                              Eigen::MatrixXd &stiff_mat)
 {
 
@@ -63,6 +191,7 @@ void StrutAnalysis::constructStiffnessMatrix(const std::vector<Eigen::Vector3d> 
 		double beta = s_theta*s_phi;
 		double gamma = c_theta;
 
+		/*
 		std::cout << "s_theta: " << s_theta << std::endl;
 		std::cout << "c_theta: " << c_theta << std::endl;		
 		std::cout << "s_phi: " << s_phi << std::endl;
@@ -70,6 +199,7 @@ void StrutAnalysis::constructStiffnessMatrix(const std::vector<Eigen::Vector3d> 
 		std::cout << "alpha: " << alpha << std::endl;
 		std::cout << "beta: " << beta << std::endl;
 		std::cout << "gamma: " << gamma << std::endl;				
+		*/
 
 		std::vector<double> coefficients(6);
 		coefficients[0] = alpha*alpha;
@@ -202,7 +332,7 @@ void StrutAnalysis::constructSelfWeightForce(const std::vector<Eigen::Vector3d> 
 {
 	assert(A.cols() == A.rows());
 	assert(A.rows() == b.size());
-	assert(conditions.size() > A.cols());
+	//assert(conditions.size() > A.cols());
 
 	Eigen::VectorXd _b = b;
 	boundedA = Eigen::MatrixXd::Zero(A.rows()-conditions.size(), A.cols()-conditions.size());
