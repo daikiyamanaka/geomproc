@@ -39,22 +39,29 @@ typedef enum CROSS_SECTION_TYPE{
 }CROSS_SECTION_TYPE;
 
 
-/**
- * @brief gravitational acceleration
- */
-	const double g_;
-
 public:
 	StrutAnalysis();
 	~StrutAnalysis();
 
-	//----------
-	// Modifier
-	//----------
+    const double length_factor = 0.001;
+
+    //------------------//
+    // Access Functions //
+    //------------------//
+
+    double getYoundModulus();
+
+    double getDensity();
+
+    Eigen::Vector3d getGravityDirection();
+
+	//----------//
+	// Modifier //
+	//----------//
 	void setYoungModulus(double val);
-	//void setCrossSection();
-	//void setRadius(double radius);
+
 	void setDensity(double density);
+
 	void setGravityDirection(Eigen::Vector3d direction);
 
 	/**
@@ -128,10 +135,24 @@ private:
 	double squareArea(const double r);
 
 	CROSS_SECTION_TYPE cross_section_type_;
+
+
 	double young_modulus_;
+
+    /**
+     * @brief direction in which gravity act
+     */    
 	Eigen::Vector3d gravity_direction_;
+
+    /**
+     * @brief density [kg/m^3]
+     */
 	double rho_;
 
+    /**
+     * @brief gravitational acceleration
+     */
+    const double g_;
 };
 
 }

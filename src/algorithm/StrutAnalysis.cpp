@@ -131,8 +131,8 @@ void StrutAnalysis::getInternalForce(const std::vector<Eigen::Vector3d> &nodes,
 		Eigen::Vector3d p = nodes[p_index];
 		Eigen::Vector3d q = nodes[q_index];
 
-		double area = circleArea(radiuses[i]);
-		double mass = (p-q).norm()*area*0.5*rho_;
+		double area = circleArea(radiuses[i]*length_factor);
+		double mass = (p-q).norm()*length_factor*area*0.5*rho_;
 
 		// add force by self weight //
 		for(int j=0; j<3; j++){
@@ -148,7 +148,7 @@ void StrutAnalysis::getInternalForce(const std::vector<Eigen::Vector3d> &nodes,
 
 }
 
-StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1*10e10), rho_(10e3){
+StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1e9), rho_(1.0e3){
 	cross_section_type_ = SQUARE;
 	/*
 	// tree //
@@ -157,8 +157,12 @@ StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1*10e10), rho_(10e3){
 	*/
 
 	// rubber //
-	//young_modulus_ = 0.1*10e10; 
-	//rho_ = 10e3;
+	//young_modulus_ = 0.1*10e9; 
+	//rho_ = 10e3; 
+
+	//plaster
+	young_modulus_ = 1.0e9; // 1.0GPa
+	rho_ = 1000*2.3; // relative density = 2.3
 
 	gravity_direction_ = Eigen::Vector3d(0, 0, -1);
 }
@@ -167,24 +171,25 @@ StrutAnalysis::~StrutAnalysis(){
 
 }
 
+double StrutAnalysis::getYoundModulus()
+{
+	return young_modulus_;
+}
+
+double StrutAnalysis::getDensity()
+{
+	return rho_;
+}
+
+Eigen::Vector3d StrutAnalysis::getGravityDirection()
+{
+	return gravity_direction_;
+}
+
 void StrutAnalysis::setYoungModulus(double val){
 	young_modulus_ = val;
 }
-/*
-void StrutAnalysis::setCrossSection(){
 
-}
-*/
-/*
-void StrutAnalysis::setRadius(double radius){
-
-}
-*/
-/*
-void StrutAnalysis::setDensity(){
-
-}
-*/
 void StrutAnalysis::setGravityDirection(Eigen::Vector3d direction){
 	gravity_direction_ = direction;
 }
@@ -236,8 +241,8 @@ void StrutAnalysis::constructStiffnessMatrix(const std::vector<Eigen::Vector3d> 
 		coefficients[4] = beta*gamma;
 		coefficients[5] = gamma*gamma;
 
-		double area = circleArea(radiuses[i]);
-		double length = (q-p).norm();
+		double area = circleArea(radiuses[i]*length_factor);
+		double length = (q-p).norm()*length_factor;
 
 		for(int k=0; k<6; k++){
 			double coeff = young_modulus_*area*coefficients[k]/length;
@@ -272,8 +277,8 @@ void StrutAnalysis::constructSelfWeightForce(const std::vector<Eigen::Vector3d> 
 		Eigen::Vector3d p = nodes[p_index];
 		Eigen::Vector3d q = nodes[q_index];
 
-		double area = circleArea(radiuses[i]);
-		double mass = (p-q).norm()*area*0.5*rho_;
+		double area = circleArea(radiuses[i]*length_factor);
+		double mass = (p-q).norm()*length_factor*area*0.5*rho_;
 
 		// add force by self weight //
 		for(int j=0; j<3; j++){
