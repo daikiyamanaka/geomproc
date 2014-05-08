@@ -161,7 +161,7 @@ StrutAnalysis::StrutAnalysis():g_(9.8),young_modulus_(0.1e9), rho_(1.0e3){
 	//rho_ = 10e3; 
 
 	//plaster
-	young_modulus_ = 1.0e9; // 1.0GPa
+	young_modulus_ = 1.0e9; // 1.0GPa = 1.0e9N/m^2
 	rho_ = 1000*2.3; // relative density = 2.3
 
 	gravity_direction_ = Eigen::Vector3d(0, 0, -1);
